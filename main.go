@@ -12,12 +12,16 @@ func Onpeer(p2p.Peer) error {
 	return nil
 }
 
+func OnPeer(p p2p.Peer) error {
+	return nil
+}
+
 func main() {
 	opts := p2p.TCPTransportOpts{
 		ListenAddr:    ":4000",
 		HandshakeFunc: p2p.NOPHandshakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
-		OnPeer:        func(p p2p.Peer) error { return fmt.Errorf("error establishing the connection") },
+		OnPeer:        OnPeer,
 	}
 
 	tr := p2p.NewTCPTransport(opts)
