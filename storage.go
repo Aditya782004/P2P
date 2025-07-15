@@ -2,7 +2,6 @@ package main
 
 import (
 	"bytes"
-	"crypto/md5"
 	"crypto/sha1"
 	"encoding/hex"
 	"fmt"
@@ -31,14 +30,14 @@ func CASPathTransformFunc(key string) PathKey {
 	}
 	return PathKey{
 		Pathname: strings.Join(paths, "/"),
-		Original: hashedStr,
+		Filename: hashedStr,
 	}
 
 }
 
 type PathKey struct {
 	Pathname string
-	Original string
+	Filename string
 }
 
 type StoreOpts struct {
@@ -55,7 +54,30 @@ func NewStore(opts StoreOpts) *Store {
 	}
 }
 
-func (s *StoreOpts) WriteStream(key string, r io.Reader) error {
+func (s *Store) Delete() {}
+
+func (s *Store) Read(key string) (io.Reader, error) {
+	f, err := s.readStream(key)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	buf := new(bytes.Buffer)
+	_, err = io.Copy(buf, f)
+	return buf, err
+}
+
+func (s *Store) readStream(key string) (io.ReadCloser, error) {
+	pathkey := s.PathTransFormFunc(key)
+	return os.Open(pathkey.Fullpath())
+
+}
+
+func (p PathKey) Fullpath() string {
+	return fmt.Sprintf("%s/%s", p.Pathname, p.Filename)
+}
+
+func (s *Store) WriteStream(key string, r io.Reader) error {
 	pathname := s.PathTransFormFunc(key)
 	fmt.Printf("path is: %v", pathname)
 	buf := new(bytes.Buffer)
@@ -64,11 +86,11 @@ func (s *StoreOpts) WriteStream(key string, r io.Reader) error {
 		return err
 	}
 	io.Copy(buf, r)
-	filenameBytes := md5.Sum(buf.Bytes())
-	filename := hex.EncodeToString(filenameBytes[:])
+
+	fullpath := pathname.Fullpath()
 	//filename := "somefilename"
 
-	f, err := os.Create(pathname.Pathname + "/" + filename)
+	f, err := os.Create(fullpath)
 	if err != nil {
 		return err
 	}
@@ -77,7 +99,7 @@ func (s *StoreOpts) WriteStream(key string, r io.Reader) error {
 	if err != nil {
 		return err
 	}
-	log.Printf("written %d bytes to the disk", n)
+	log.Printf("written %d bytes to the disk %s", n, fullpath)
 
 	return nil
 }

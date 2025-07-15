@@ -3,6 +3,7 @@ package main
 import (
 	"bytes"
 	"fmt"
+	"io"
 	"testing"
 )
 
@@ -14,8 +15,8 @@ func TestHash(t *testing.T) {
 	if Pathname.Pathname != ExpectedPathname {
 		fmt.Printf("have %s want %s ", Pathname.Pathname, ExpectedPathname)
 	}
-	if Pathname.Original != expectedOriginalKey {
-		fmt.Printf("have %s want %s ", Pathname.Original, expectedOriginalKey)
+	if Pathname.Filename != expectedOriginalKey {
+		fmt.Printf("have %s want %s ", Pathname.Filename, expectedOriginalKey)
 	}
 
 }
@@ -25,10 +26,20 @@ func TestStore(t *testing.T) {
 		PathTransFormFunc: CASPathTransformFunc,
 	}
 	s := NewStore(opts)
-	//key := "sampleKey"
-	data := bytes.NewReader([]byte("some data"))
-	err := s.WriteStream("specialPic", data)
+	key := "sampleKey"
+	data := []byte("some data")
+	err := s.WriteStream(key, bytes.NewReader(data))
 	if err != nil {
 		t.Errorf("some error occured")
 	}
+	r, err := s.Read(key)
+	if err != nil {
+		t.Error(err)
+	}
+
+	b, _ := io.ReadAll(r)
+	if string(b) != string(data) {
+		t.Error("have %s wnat %s", b, data)
+	}
+
 }
