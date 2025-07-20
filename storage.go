@@ -44,11 +44,11 @@ type PathKey struct {
 }
 
 type StoreOpts struct {
+	Root              string
 	PathTransFormFunc PathTransFormFunc
 }
 
 type Store struct {
-	Root string
 	StoreOpts
 }
 
@@ -58,8 +58,10 @@ func NewStore(opts StoreOpts) *Store {
 	if opts.PathTransFormFunc == nil {
 		opts.PathTransFormFunc = DefaultPathTransportFunc
 	}
+	if len(opts.Root) == 0 {
+		opts.Root = DefaultRootDir
+	}
 	return &Store{
-		Root:      DefaultRootDir,
 		StoreOpts: opts,
 	}
 }

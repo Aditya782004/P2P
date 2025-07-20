@@ -6,8 +6,10 @@ type Peer interface {
 }
 
 type Transport interface {
+	Dial(string) error
 	ListenAndAccept() error
 	Consume() <-chan RPC
+	Close() error
 }
 
 // type Closech interface {

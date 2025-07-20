@@ -16,23 +16,34 @@ func OnPeer(p p2p.Peer) error {
 	return nil
 }
 
-func main() {
-	opts := p2p.TCPTransportOpts{
-		ListenAddr:    ":4000",
+func makeServer(ListenAddr string, nodes ...string) *FileServer {
+	TcptransportOpts := p2p.TCPTransportOpts{
+		ListenAddr:    ListenAddr,
 		HandshakeFunc: p2p.NOPHandshakeFunc,
 		Decoder:       p2p.DefaultDecoder{},
-		OnPeer:        OnPeer,
+		//TODO OnPeer:        OnPeer,
 	}
+	tcpTransport := p2p.NewTCPTransport(TcptransportOpts)
 
-	tr := p2p.NewTCPTransport(opts)
+	fileServer := FileServerOpts{
+		StorageRoot:       "4000_practice",
+		PathTransFormFunc: CASPathTransformFunc,
+		Transport:         tcpTransport,
+		Bootstrapnodes:    nodes,
+	}
+	return NewFileServer(fileServer)
+}
+
+func main() {
+	s1 := makeServer(":3000", "")
+	s2 := makeServer(":4000", "")
+
 	go func() {
-		for {
-			msg := <-tr.Consume()
-			fmt.Printf("Msg: %+v\n", msg)
+		err := s1.Start()
+		if err != nil {
+			log.Fatal(err)
 		}
 	}()
-	if err := tr.ListenAndAccept(); err != nil {
-		log.Fatal(err)
-	}
-	select {}
+	s2.Start()
+
 }

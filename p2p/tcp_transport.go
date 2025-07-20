@@ -50,6 +50,21 @@ func (p *TCPPeer) Close() error {
 	return p.conn.Close()
 }
 
+// Close Implements Transport interface
+func (t *TCPTransport) Close() error {
+	return t.listener.Close()
+}
+
+// Dial Implements the Transport Interfac.
+func (t *TCPTransport) Dial(addr string) error {
+	conn, err := net.Dial("tcp", addr)
+	if err != nil {
+		return err
+	}
+	go t.handleConn(conn, true)
+	return nil
+}
+
 func (t *TCPTransport) ListenAndAccept() error {
 	var err error
 	t.listener, err = net.Listen("tcp", t.ListenAddr)
@@ -58,6 +73,7 @@ func (t *TCPTransport) ListenAndAccept() error {
 	}
 
 	go t.startAccpetLoop()
+	log.Printf("tcp transport listening on port 4000")
 	return nil
 
 }
@@ -69,20 +85,20 @@ func (t *TCPTransport) startAccpetLoop() {
 			fmt.Printf("TCP Acccept Error %s\n", err)
 			fmt.Println(conn)
 		}
-		go t.handleConn(conn)
+		go t.handleConn(conn, false)
 	}
 }
 
 type Temp struct{}
 
-func (t *TCPTransport) handleConn(conn net.Conn) {
+func (t *TCPTransport) handleConn(conn net.Conn, outbound bool) {
 	var err error
 	defer func() {
-		fmt.Printf("new incoming connections %+v\n", err)
+		fmt.Printf("connections closed %+v\n", err)
 		conn.Close()
 	}()
-	peer := t.NewTCPPeer(conn, true)
-	fmt.Printf("new incoming connections %+v\n", peer)
+	peer := t.NewTCPPeer(conn, outbound)
+	// fmt.Printf("new incoming connections %+v\n", peer)
 	if err = t.HandshakeFunc(peer); err != nil {
 		return
 	}
